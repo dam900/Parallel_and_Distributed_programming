@@ -1,14 +1,8 @@
 #include <mpi.h> // Import MPI lib
 #include <iostream>
-#include <list>
-#include <unistd.h>
 #include <cmath>
 
 #define DEBUG 1
-
-// MPI tags
-#define P_PARAMETER_INFO 0
-#define PART_OF_SUM 1
 
 void run_client_task(int, int);
 void run_worker_task(int, int, int);
