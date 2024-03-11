@@ -49,37 +49,44 @@ void run_table_task(int my_rank, int num_procs)
     }
 
     while (true) {
+        // Listen for incoming requests
         MPI_Recv(&buffer_in, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         philosopher = status.MPI_SOURCE;
 
         if (status.MPI_TAG == GRAB_FORKS_REQUEST){
             if (DEBUG) std::cout << "Got GRAB_FORKS_REQUEST from " << status.MPI_SOURCE << std::endl;
-            if (forks[philosopher%(num_procs-1)] == true && forks[philosopher-1] == true){
+            if (forks[philosopher%(num_procs-1)] == true && forks[philosopher-1] == true){ // Check if forks near philosopher are available
+                // if so make them unavailable for others
                 forks[philosopher%(num_procs-1)] = false;
                 forks[philosopher-1] = false;
+                // notify philospher that now he has the forks
                 MPI_Send(&buffer_out, 1, MPI_INT, philosopher, GRAB_FORKS_PERMISSION_RESPONSE, MPI_COMM_WORLD);
                 if (DEBUG) std::cout << "Sent GRAB_FORKS_PERMISSION_RESPONSE to " << status.MPI_SOURCE << std::endl;
             } else {
                 if (DEBUG) std::cout << "Got GRAB_FORKS_REQUEST from " << status.MPI_SOURCE << std::endl;
                 if (DEBUG) std::cout << "There are no available forks for " << status.MPI_SOURCE << std::endl << "Adding " << philosopher << " to the queue" << std::endl;
+                // push philosopher to the waiting queue
                 queue.push_back(philosopher);
             }
         }
         else if (status.MPI_TAG == PUT_DOWN_FORKS_REQUEST){
             if (DEBUG) std::cout << "Got PUT_DOWN_FORKS_REQUEST from " << status.MPI_SOURCE << std::endl;
+            // Make forks from philosopher available again
             forks[philosopher%(num_procs-1)] = true;
             forks[philosopher-1] = true;
             if (DEBUG) std::cout << "Put down forks from philosopher " << philosopher << std::endl;
-            if (!queue.empty()) {
+            if (!queue.empty()) { // serve waiting philosophers
                 if (DEBUG) std::cout << "Processing queue" << std::endl;
                 for (std::list<int>::iterator it = queue.begin(); it != queue.end(); it++){
                     philosopher = *it;
-                    if (forks[philosopher%(num_procs-1)] == true && forks[philosopher-1] == true){
+                    if (forks[philosopher%(num_procs-1)] == true && forks[philosopher-1] == true){ // If waiting philosopher have forks available grant them to him
+                        // Make forks unavailable to others
                         forks[philosopher%(num_procs-1)] = false;
                         forks[philosopher-1] = false;
+                        // notify philospher that now he has the forks
                         MPI_Send(&buffer_out, 1, MPI_INT, philosopher, GRAB_FORKS_PERMISSION_RESPONSE, MPI_COMM_WORLD);
                         if (DEBUG) std::cout << "Sent GRAB_FORKS_PERMISSION_RESPONSE to " << status.MPI_SOURCE << std::endl;
-                        it = queue.erase(it);
+                        it = queue.erase(it); // Philosopher is no longer waiting
                     }
                 }
             }
