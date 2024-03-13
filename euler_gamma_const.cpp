@@ -12,25 +12,17 @@ int main(int argc, char** argv) {
     int n = std::stoi(argv[2]); // provide imaginary flag -n / --number <number of elemnts to sum>
 
     double sum;
-    double sendbuf = 0;
-
-    double amount = floor((n / (processes-1)));    
-    double bottom_bound = rank*amount+1; 
-    double upper_bound = (rank+1)*amount;
-
-    if (rank == processes-2) {
-        upper_bound = (double)n-(processes-3)*amount;  
+    double sendbuf = 0.0;
+    
+    for (int i = rank+1; i < n+1; i+=processes){
+        sendbuf += 1.0 / i;
     }
 
-    for (int i = bottom_bound; i < upper_bound; i++){
-        sendbuf += 1 / i;
-    }
+    MPI_Reduce(&sendbuf, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    MPI_Reduce(&sendbuf, &sum, 1, MPI_DOUBLE, MPI_SUM, processes-1, MPI_COMM_WORLD);
-
-    if (rank == processes-1){
-        sum -= log((double)n);
-        std::cout << "sum is equal to " << sum << std::endl;
+    if (rank == 0){
+        sum -= log(n);
+        std::cout << "gamma is equal to " << sum << std::endl;
     }
     MPI_Finalize(); // Finalize the MPI environment.
 }
