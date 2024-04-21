@@ -2,12 +2,15 @@
 #include "include/pugixml.hpp"
 #include <mpi.h>
 #include <vector>
+#include <random>
+#include <algorithm>
+#include <iomanip>
 
 #define DEBUG 1
 
 typedef std::vector<std::vector<double>> Table;
 
-void pretty_print(const Table& table);
+void pretty_print(const Table& table, bool like_float = false);
 void parse_xml(const char* filename, Table& vertecies);
 void parse_args(int argc, char** argv, int& n, char* &filename);
 
@@ -17,13 +20,27 @@ int main(int argc, char** argv) {
     int rank; MPI_Comm_rank(MPI_COMM_WORLD, &rank); // Get the rank of the process
     int n; char* filename; parse_args(argc, argv, n, filename); // Parse cmd line arguments
 
-    Table adj_mat = Table(n, std::vector<double>(n, 0.0));
-    auto some_vec = std::vector<double>(n, 0.0);
-    if (rank == 0) { parse_xml(filename, adj_mat); if (DEBUG) pretty_print(adj_mat);} // Parse the xml file and print the adjacency matrix for verification
+    std::uniform_real_distribution<double> dist(0, 1); // distribution in range [0, 1]
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    Table adj_mat = Table(n, std::vector<double>(n, 0.0)); 
+    Table pheromones = Table(n, std::vector<double>(n, 0.0));
+
+    if (rank == 0) { 
+        for (auto &row : pheromones) {
+            std::generate(row.begin(), row.end(), [&]() { return dist(gen); });
+        }
+        parse_xml(filename, adj_mat); // Parse the xml file and print the adjacency matrix for verification
+        if (DEBUG) pretty_print(adj_mat);
+        if (DEBUG) pretty_print(pheromones, true);
+    } 
     MPI_Barrier(MPI_COMM_WORLD); // Wait until xml file is read
     for (int i = 0; i < adj_mat.size(); i++) { 
         MPI_Bcast(adj_mat[i].data(), adj_mat[i].size(), MPI_DOUBLE, 0, MPI_COMM_WORLD); // Broadcast the adjacency matrix to all processes
+        MPI_Bcast(pheromones[i].data(), pheromones[i].size(), MPI_DOUBLE, 0, MPI_COMM_WORLD); // Broadcast the pheromones table to all processes
     }
+
 
     MPI_Finalize(); // Finalize the MPI environment 
     return 0;
@@ -51,10 +68,15 @@ void parse_xml(const char* filename, Table& vertecies) {
     }
 }
 
-void pretty_print(const Table& table) {
+void pretty_print(const Table& table, bool like_float) {
     for (int i = 0; i < table.size(); i++) {
         for (int j = 0; j < table[i].size(); j++) {
-            std::cout << table[i][j] << " ";
+            if (like_float) std::cout << std::setw(4) << std::setprecision(1) << table[i][j] << " | ";
+            if (!like_float) std::cout << std::setw(4) << table[i][j] << " | ";
+        }
+        std::cout << std::endl;
+        for (int j = 0; j < table[i].size(); j++) {
+            std::cout << "-------";
         }
         std::cout << std::endl;
     }
