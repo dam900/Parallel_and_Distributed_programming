@@ -1,3 +1,5 @@
 .vscode/
 builds/
 hello.cpp
+lista2/tsp/include/
+lista2/tsp/data/*.zip
