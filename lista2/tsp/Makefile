@@ -1,6 +1,6 @@
 build:
 	@echo "Building the project"
-	@mpic++ -o out.out tsp_problem.cpp include/pugixml.cpp aco_utils.cpp
+	@mpic++ -o out.out src/*.cpp include/*.cpp
 	@echo "Build complete"
 
 run:build
