@@ -11,13 +11,18 @@
 
 #include "rng.hpp"
 
-std::pair<double, Path> MPI_PACS::run(int num_ants, int num_iter, int num_cities, int comm_freq) {
+std::pair<double, Path> MPI_PACS::run(int num_ants, int num_iter, int num_cities, int comm_freq, double timeout) {
     IntRNG city_rng(0, num_cities - 1);
 
     auto best_cost = std::numeric_limits<double>::max();  // Start with a high cost
     auto best_path = Path();                              // Start with empty path
 
+    double start = MPI_Wtime();
+
     for (int iter = 0; iter < num_iter; iter++) {  // Main loop
+        if (MPI_Wtime() - start >= timeout) {
+            break;
+        }
         for (int i = 0; i < num_ants; i++) {
             int start = city_rng.getNext();                // generate random starting point for single ant
             auto path = generate_path(start, num_cities);  // generate path for single ant

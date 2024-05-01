@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -40,19 +41,18 @@ int main(int argc, char **argv) {
         MPI_Bcast(pheromones[i].data(), pheromones[i].size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);  // Broadcast the pheromones table to all processes
     }
 
-    MPI_PACS pacs = MPI_PACS(-2.0, 0.1, 2.0, 100.0, 0.6);
+    MPI_PACS pacs = MPI_PACS(-3.0, 0.3, 2.0, 100.0, 0.6);
     pacs.set_adj_mat(adj_mat);
     pacs.set_pheromones(pheromones);
 
-    // Actual ACO algorithm
-    // begin
-    auto p = pacs.run(10, 100, n, 15);
-    auto best_cost = p.first;
-    auto best_path = p.second;
+    // Invocation of PACS algorithm
+    auto p = pacs.run(10, 1000, n, 80, 10.0);
+    double global_best_cost;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce(&p.first, &global_best_cost, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 
-    // end
-    if (rank == 0) {
-        print_path(best_path, best_cost);
+    if (global_best_cost == p.first) {
+        print_path(p.second, p.first);
     }
 
     MPI_Finalize();  // Finalize the MPI environment

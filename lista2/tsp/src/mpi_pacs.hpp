@@ -40,8 +40,9 @@ class MPI_PACS {
      * @param num_iter number of iterations
      * @param num_cities number of cities
      * @param comm_freq communication frequency
+     * @param timeout maximum time to run the algorithm in seconds
      */
-    std::pair<double, Path> run(int num_ants, int num_iter, int num_cities, int comm_freq);
+    std::pair<double, Path> run(int num_ants, int num_iter, int num_cities, int comm_freq, double timeout);
 
    private:
     double BETA = -2.0;  // Distance importance
