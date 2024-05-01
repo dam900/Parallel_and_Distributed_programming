@@ -69,14 +69,30 @@ Path MPI_PACS::generate_path(int start, int n) {
     std::list<int> unvisited = construct_unvisited_list(start, n);
     auto current = start, next_dest = -1;
 
+    DoubleRNG action = DoubleRNG(0.0, 1.0);
+
     while (unvisited.size() > 0) {
         auto best = std::numeric_limits<double>::max();
         for (auto city : unvisited) {
-            // calculate the probability of moving to the next city
-            double prob = pheromones[current][city] * pow((1 / adj_mat[current][city]), BETA);
-            if (prob < best) {
-                best = prob;
-                next_dest = city;
+            if (action.getNext() < 0.5) {
+                // If the random number is less than 0.5, use greedy selection
+                double prob = pheromones[current][city] * pow((1 / adj_mat[current][city]), BETA);
+                if (prob < best) {
+                    best = prob;
+                    next_dest = city;
+                }
+            } else {
+                // Otherwise, use probabilistic selection
+                double full_prob = 0.0;
+                double prob = pheromones[current][city] * pow((1 / adj_mat[current][city]), BETA);  // probability of moving to the city
+                for (auto city_id : unvisited) {
+                    if (city_id == city) continue;
+                    full_prob += pheromones[current][city_id] * pow((1 / adj_mat[current][city_id]), BETA);
+                }
+                if (prob / full_prob < best) {
+                    best = prob / full_prob;
+                    next_dest = city;
+                }
             }
         }
         path.push_back(next_dest);    // move to the next city
