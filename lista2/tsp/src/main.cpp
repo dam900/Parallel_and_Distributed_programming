@@ -19,14 +19,12 @@ void print_path(const Path &path, int cost);
 
 int main(int argc, char **argv) {
     int n;
-    int num_procs;
     int rank;
     char *filename;
 
-    MPI_Init(&argc, &argv);                     // Initialize the MPI environment
-    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);  // Get the number of processes
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);       // Get the rank of the process
-    parse_args(argc, argv, n, filename);        // Parse cmd line arguments
+    MPI_Init(&argc, &argv);                // Initialize the MPI environment
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  // Get the rank of the process
+    parse_args(argc, argv, n, filename);   // Parse cmd line arguments
 
     Matrix adj_mat = Matrix(n, std::vector<double>(n, 0.0));
     Matrix pheromones = Matrix(n, std::vector<double>(n, 1.0));  // Initialize the pheromones table
@@ -90,7 +88,6 @@ void parse_xml(const char *filename, Matrix &vertecies) {
 
 /**
  * Pretty print the table
- *
  * @param table The table to be printed
  * @param like_float If true, print the table with up to 4 numbers of precision
  */
