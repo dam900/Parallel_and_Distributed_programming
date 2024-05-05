@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "qap_data_reader.hpp"
+#include "qap_solver.hpp"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -29,9 +30,26 @@ int main(int argc, char** argv) {
         flowMatrix = f;
         distanceMatrix = d;
     }
+
     for (int i = 0; i < n; i++) {
-        MPI_Bcast(flowMatrix[i].data(), n, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(distanceMatrix[i].data(), n, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(flowMatrix[i].data(), flowMatrix[i].size(), MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(distanceMatrix[i].data(), distanceMatrix[i].size(), MPI_INT, 0, MPI_COMM_WORLD);
+    }
+
+    QapSolver solver = QapSolver(distanceMatrix, flowMatrix, 0.997);
+    auto solution = solver.solve(1000, n, 100, 100);
+
+    int bestSolution;
+
+    MPI_Allreduce(&solution.second, &bestSolution, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    if (bestSolution == solution.second) {
+        std::cout << "Solution: ";
+        for (auto val : solution.first) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "Cost: " << solution.second << std::endl;
     }
 
     MPI_Finalize();

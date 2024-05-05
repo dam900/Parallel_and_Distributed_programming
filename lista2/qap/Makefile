@@ -3,13 +3,12 @@ build:
 	@mpic++ -o out.out src/*.cpp
 	@echo "Build complete"
 
-run: build
+run:build
 	@echo "Running the project"
-	@mpiexec -n 4 ./out.out
+	@mpiexec -n 5 ./out.out $(n) $(file)
 	@rm out.out
 
-
-run_chr20a: build
+run_esc16i:build
 	@echo "Running the project"
-	@mpiexec -n 4 ./out.out 20 ./data/chr20a.dat
+	@mpiexec -n 5 ./out.out 16 ./data/esc16i.dat
 	@rm out.out
