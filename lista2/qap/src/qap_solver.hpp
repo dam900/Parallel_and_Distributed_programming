@@ -15,6 +15,8 @@ class QapSolver {
    private:
     IntMatrix distanceMatrix;
     IntMatrix flowMatrix;
+    int rank;
+    int num_procs;
 
     int cost(const SolutionCandidate &candidate);
 };

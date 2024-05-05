@@ -8,6 +8,9 @@ QapSolver::QapSolver(const IntMatrix &distanceMatrix, const IntMatrix &flowMatri
     this->distanceMatrix = distanceMatrix;
     this->flowMatrix = flowMatrix;
     this->coolingRate = coolingRate;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 }
 
 int QapSolver::cost(SolutionCandidate const &candidate) {
@@ -49,10 +52,17 @@ std::pair<SolutionCandidate, int> QapSolver::solve(int max_iter, int num_cities,
         }
 
         if (i % exchange_period == 0) {
-            int bestSolutionCost;
-            MPI_Allreduce(&bestCost, &bestSolutionCost, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-            if (bestSolutionCost != bestCost) {
-                bestCost = bestSolutionCost;
+            std::vector<int> globalSolutions = std::vector<int>(num_procs * num_cities);
+            MPI_Allgather(bestSolution.data(), num_cities, MPI_INT, globalSolutions.data(), num_cities, MPI_INT, MPI_COMM_WORLD);
+
+            for (int j = 0; j < num_procs; j++) {
+                SolutionCandidate candidate = SolutionCandidate(globalSolutions.begin() + j * num_cities, globalSolutions.begin() + (j + 1) * num_cities);
+                int candidateCost = cost(candidate);
+
+                if (candidateCost < bestCost) {
+                    bestSolution = candidate;
+                    bestCost = candidateCost;
+                }
             }
         }
 
