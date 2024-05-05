@@ -13,8 +13,6 @@ class IntRNG {
     }
 
    private:
-    int min;
-    int max;
     std::mt19937 gen;
     std::uniform_int_distribution<int> dist;
 };
@@ -32,8 +30,6 @@ class DoubleRNG {
     }
 
    private:
-    double min;
-    double max;
     std::mt19937 gen;
     std::uniform_real_distribution<double> dist;
 };
