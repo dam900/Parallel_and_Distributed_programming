@@ -2,7 +2,7 @@
 
 class IntRNG {
    public:
-    IntRNG(int min, int max) : min(min), max(max) {
+    IntRNG(int min, int max) {
         std::random_device rd;
         gen = std::mt19937(rd());
         dist = std::uniform_int_distribution<int>(min, max);
@@ -19,7 +19,7 @@ class IntRNG {
 
 class DoubleRNG {
    public:
-    DoubleRNG(double min, double max) : min(min), max(max) {
+    DoubleRNG(double min, double max) {
         std::random_device rd;
         gen = std::mt19937(rd());
         dist = std::uniform_real_distribution<double>(min, max);
