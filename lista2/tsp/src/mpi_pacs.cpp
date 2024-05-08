@@ -100,9 +100,11 @@ Path MPI_PACS::generate_path(int start, int n) {
                 }
             }
         }
-        path.push_back(next_dest);    // move to the next city
-        current = next_dest;          // update the current city
-        unvisited.remove(next_dest);  // remove the city from the unvisited list
+        if (current != next_dest) {
+            unvisited.remove(next_dest);  // remove the city from the unvisited list
+            path.push_back(next_dest);    // move to the next city
+            current = next_dest;          // update the current city
+        }
     }
     path.push_back(start);  // comback to the start
     return path;
@@ -156,6 +158,6 @@ void MPI_PACS::global_update_strategy(const Path &path) {
 Path MPI_PACS::construct_unvisited_list(int start, int n) {
     std::list<int> unvisited;
     for (int i = 0; i < n; i++)
-        if (i != start) unvisited.emplace_back(i);
+        if (i != start) unvisited.push_back(i);
     return unvisited;
 }
