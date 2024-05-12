@@ -1,6 +1,6 @@
 build:
 	@echo "Building the project"
-	@mpic++ -o out.out src/*.cpp
+	@mpic++ -o out.out src/*.cpp -fopenmp
 	@echo "Build complete"
 
 run:build

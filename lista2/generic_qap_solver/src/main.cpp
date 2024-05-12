@@ -51,9 +51,9 @@ int main(int argc, char** argv) {
 
     std::function<double(const solution_t&)> cost = [&](const solution_t& candidate) {
         double cost = 0;
-        int i, j;
-        for (i = 0; i < candidate.size(); i++) {
-            for (j = 0; j < candidate.size(); j++) {
+#pragma omp parallel for collapse(2) reduction(+ : cost) shared(candidate, distanceMatrix, flowMatrix) num_threads(4)
+        for (int i = 0; i < candidate.size(); i++) {
+            for (int j = 0; j < candidate.size(); j++) {
                 cost += flowMatrix[i][j] * distanceMatrix[candidate[i] - 1][candidate[j] - 1];
             }
         }
