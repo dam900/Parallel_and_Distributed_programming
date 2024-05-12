@@ -39,10 +39,20 @@ std::pair<double, Path> MPI_PACS::run(int num_ants, int num_iter, int num_cities
             MPI_Barrier(MPI_COMM_WORLD);
             double global_best_cost;
             MPI_Allreduce(&best_cost, &global_best_cost, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+            int best_cost_rank = rank;
             if (global_best_cost == best_cost) {
-                for (int i = 0; i < pheromones.size(); i++) {
-                    MPI_Bcast(pheromones[i].data(), pheromones[i].size(), MPI_DOUBLE, rank, MPI_COMM_WORLD);  // Broadcast the pheromones table to all processes
+                for (int i = 0; i < num_procs; i++) {
+                    if (i != rank) {
+                        MPI_Send(&rank, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                    }
                 }
+            } else {
+                MPI_Status status;
+                MPI_Recv(&best_cost_rank, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            for (int i = 0; i < pheromones.size(); i++) {
+                MPI_Bcast(pheromones[i].data(), pheromones[i].size(), MPI_DOUBLE, best_cost_rank, MPI_COMM_WORLD);  // Broadcast the pheromones table to all processes
             }
             best_cost = global_best_cost;
         }
