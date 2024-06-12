@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include "qap_data_reader.hpp"
+#include "neh_data_reader.hpp"
 #include "rng.hpp"
 #include "simulated_annealing_solver.hpp"
 
@@ -18,28 +18,19 @@ int main(int argc, char** argv) {
     int num_procs;
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
-    if (argc < 2) {
-        if (rank == 0) {
-            std::cout << "Usage: " << argv[0] << " <n> <filename>" << std::endl;
-        }
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
+    int n = 50;
+    int M = 20;
+    std::string filename = std::string("./data/neh50_20.dat");
 
-    int n = std::stoi(argv[1]);
-    std::string filename = std::string(argv[2]);
-    IntMatrix flowMatrix(n, std::vector<int>(n));
-    IntMatrix distanceMatrix(n, std::vector<int>(n));
+    IntMatrix tasks(n, std::vector<int>(n));
 
     if (rank == 0) {
-        QapDataReader reader = QapDataReader();
-        auto [n, f, d] = reader.fromDataFile(filename);
-        flowMatrix = f;
-        distanceMatrix = d;
+        NehDataReader reader = NehDataReader();
+        tasks = reader.fromDataFile(filename);
     }
 
     for (int i = 0; i < n; i++) {
-        MPI_Bcast(flowMatrix[i].data(), flowMatrix[i].size(), MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(distanceMatrix[i].data(), distanceMatrix[i].size(), MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(tasks[i].data(), tasks[i].size(), MPI_INT, 0, MPI_COMM_WORLD);
     }
 
     IntRNG swap = IntRNG(0, n - 1);
@@ -50,14 +41,19 @@ int main(int argc, char** argv) {
     };
 
     std::function<double(const solution_t&)> cost = [&](const solution_t& candidate) {
-        double cost = 0;
-#pragma omp parallel for collapse(2) reduction(+ : cost) shared(candidate, distanceMatrix, flowMatrix) num_threads(4)
-        for (int i = 0; i < candidate.size(); i++) {
-            for (int j = 0; j < candidate.size(); j++) {
-                cost += flowMatrix[i][j] * distanceMatrix[candidate[i] - 1][candidate[j] - 1];
+        std::vector<int> Cmaxs(M, 0);
+        for (int p = 0; p < n; p++) {
+            int t_index = candidate[p] - 1;
+            for (int m = 0; m < M; m++) {
+                if (m != 0) {
+                    Cmaxs[m] = std::max(Cmaxs[m - 1], Cmaxs[m]) + tasks[t_index][m];
+                } else {
+                    Cmaxs[m] = Cmaxs[m] + tasks[t_index][m];
+                }
             }
         }
-        return cost;
+        int maxCmax = *std::max_element(Cmaxs.begin(), Cmaxs.end());
+        return maxCmax;
     };
 
     std::function<solution_t()> init_start_sol = [&]() {
